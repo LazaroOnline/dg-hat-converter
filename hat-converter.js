@@ -58,6 +58,7 @@ function getHatFileInfo(file) {
 const inputElement = document.getElementById("upload");
 inputElement.addEventListener("change", handleFiles, false);
 
+let dropArea = document.getElementById("dropArea");
 let dropbox = document.getElementById("uploadbox");
 function dragenter(e) {
 	dropbox.classList.add("drop");
@@ -80,11 +81,11 @@ function drop(e) {
 	const files = dt.files;
 	handleFiles(files);
 }
-dropbox.addEventListener("dragenter", dragenter, false);
-dropbox.addEventListener("dragover", dragover, false);
-dropbox.addEventListener("drop", drop, false);
-dropbox.addEventListener("dragleave", dragend, false);
-dropbox.addEventListener("dragend", dragend, false);
+dropArea.addEventListener("dragenter", dragenter, false);
+dropArea.addEventListener("dragover", dragover, false);
+dropArea.addEventListener("drop", drop, false);
+dropArea.addEventListener("dragleave", dragend, false);
+dropArea.addEventListener("dragend", dragend, false);
 
 /*
 
