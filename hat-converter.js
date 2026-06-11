@@ -6,9 +6,10 @@ Web interface events and listeners
 const dlAllLink = document.getElementById("downloadZip")
 
 // handle file "uploads"
-async function handleFiles(files) {
+async function handleFiles(filesOrEvent) {
 	dlAllLink.hidden = true;
-	const fileList = Array.from(files || this.files);
+	const files = filesOrEvent?.length > 0? filesOrEvent : this.files;
+	const fileList = Array.from(files);
 	console.log(`Started processing ${fileList.length} files in total.`);
 	const promises = [];
 	const BATCH_SIZE = 100;
