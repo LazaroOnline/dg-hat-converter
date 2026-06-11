@@ -6,45 +6,54 @@ Web interface events and listeners
 const dlAllLink = document.getElementById("downloadZip")
 
 // handle file "uploads"
-function handleFiles(files) {
+async function handleFiles(files) {
 	dlAllLink.hidden = true;
-	const fileList = this.files || files;
+	const fileList = Array.from(files || this.files);
 	console.log(`Started processing ${fileList.length} files in total.`);
 	const promises = [];
-	for (let i = 0, numFiles = fileList.length; i < numFiles; i++) {
-		promises.push(new Promise((resolve, reject) => {
-			const file = fileList[i];
-			const reader = new FileReader();
-			reader.onload = (result) => {
-				decryptHat(result.target.result).then((r) => {
-					const nameSanitized = sanitizeFileName(r.name);
-					const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
-					// "name" is the metadata inside the hat file.
-					// "hatFileName" is the original .hat file name.
-					// "newFileName" is the sanitized and made-unique name for the output PNG.
-					const h = { name: r.name, hatFileName: file.name, newFileName: nameSanitizedUnique, blob: r.blob }
-					const alreadyExistingHat = existHat(h, hats);
-					if (alreadyExistingHat) {
-						console.warn(`Hat "${h.name}" with ${h.blob.size} bytes already exists. Skipping duplicate: ${h.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
-					}
-					else {
-						hats.push(h);
-						createOutputElem(h.name, h.hatFileName, h.newFileName, h.blob);
-						console.log(`Processed file: ${h.hatFileName} -> ${h.name}`);
-					}
-					resolve(r);
-				})
-			}
-			reader.readAsArrayBuffer(file);
-		}))
+	const BATCH_SIZE = 100;
+	const allResults = [];
+	for (let start = 0; start < fileList.length; start += BATCH_SIZE) {
+		const batch = fileList.slice(start, start + BATCH_SIZE);
+		console.log(`Started processing batch ${batch.length} files...`);
+		const batchPromises = batch.map(file => getHatFileInfo(file));
+		const results = await Promise.allSettled(batchPromises);
+		promises.push(...results);
 	}
-	Promise.all(promises).then((hatList)=>{
-		console.log(hatList)
-		createZip()
-		console.log(`Finished processing all ${fileList.length} files into ${hats.length} hats.`);
-		dlAllLink.hidden = false;
+	const hatList = await Promise.all(promises);
+	console.log(hatList)
+	createZip()
+	console.log(`Finished processing all ${fileList.length} files into ${hats.length} hats.`);
+	dlAllLink.hidden = false;
+}
+
+function getHatFileInfo(file) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = (result) => {
+			decryptHat(result.target.result).then((r) => {
+				const nameSanitized = sanitizeFileName(r.name);
+				const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
+				// "name" is the metadata inside the hat file.
+				// "hatFileName" is the original .hat file name.
+				// "newFileName" is the sanitized and made-unique name for the output PNG.
+				const h = { name: r.name, hatFileName: file.name, newFileName: nameSanitizedUnique, blob: r.blob }
+				const alreadyExistingHat = existHat(h, hats);
+				if (alreadyExistingHat) {
+					console.warn(`Hat "${h.name}" with ${h.blob.size} bytes already exists. Skipping duplicate: ${h.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
+				}
+				else {
+					hats.push(h);
+					createOutputElem(h.name, h.hatFileName, h.newFileName, h.blob);
+					console.log(`Processed file: ${h.hatFileName} -> ${h.name}`);
+				}
+				resolve(h);
+			})
+		}
+		reader.readAsArrayBuffer(file);
 	})
 }
+
 const inputElement = document.getElementById("upload");
 inputElement.addEventListener("change", handleFiles, false);
 
@@ -174,7 +183,7 @@ function existHat(hatInfo, hats) {
 }
 
 function compareHats(hatInfo1, hatInfo2) {
-	return hatInfo1.name === hatInfo2.name 
+	return hatInfo1.name === hatInfo2.name
 		&& hatInfo1.blob.size === hatInfo2.blob.size;
 }
 
