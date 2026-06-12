@@ -139,9 +139,11 @@ p {
 
 .button-list {
     display: flex;
+    grid-auto-flow: column;
     position: absolute;
     top: 8px;
     right: 8px;
+    gap: 6px;
 }
 div.github-link {
     position: absolute;
@@ -152,7 +154,7 @@ div.github-link {
     height: 20px;
 }
 .github-link svg {
-    scale: 0.8;
+    scale: 1;
 }
 .btn {
     background: none;
@@ -168,15 +170,15 @@ div.github-link {
 .btn:hover {
     filter: drop-shadow(1px 2px 4px black);
 }
-.btn-dark {
-    font-size: 19px;
+.btn-circle {
+    font-size: 24px;
     background: #c8c8c8;
-    border-radius: 22px;
-    margin-top: 3px;
-    height: 26px;
+    border-radius: 50%;
+    height: 37px;
+    width: 37px;
 }
-.btn-overlay {
-    margin-right: 5px;
+.btn-circle div {
+    filter: drop-shadow(0px 0px 1px #00000055);
 }
 .btn-clear {
     position: sticky;
@@ -254,4 +256,39 @@ div.github-link {
 }
 .btn-press:active {
     transform: translateY(1px);
+}
+
+.color-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.menu {
+  position: absolute;
+  top: 100%;
+  left: -50%;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  /* background: #bfbfbf; */
+  min-width: 60px;
+  border-radius: 11px;
+  z-index: 100;
+}
+.color-dropdown:hover .menu {
+  display: flex;
+}
+.btn-color-option {
+    /* border: 1px solid #111111; */
+  border: none;
+    color: #111111;
+    height: 24px;
+    border-radius: 10px;
+}
+.btn-color-option div {
+    color: black;
+    opacity: 0.6;
+    font-size: 12px;
+    text-transform: capitalize;
+    /* mix-blend-mode: luminosity; */
 }

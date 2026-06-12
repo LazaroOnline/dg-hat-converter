@@ -18,18 +18,24 @@
                 <h1>Hat Converter for Duck Game</h1>
                 <p><label>Drag or select .hat files here to convert them. <input type="file" name="" id="upload" multiple></label></p>
               </div>
-              <div class="visibleAfterLoad" hidden>
+              <div class="visibleAfterLoad">
                 <p>Click on a hat to download the PNG image.</p>
-                <a id="downloadZip" hidden><button class="btn btn-main">Download All as ZIP</button></a>
+                <a id="downloadZip"><button class="btn btn-main">Download All as ZIP</button></a>
               </div>
               <div class="button-list">
-                
-                <button id="toggle-overlay-colors" class="btn btn-press btn-dark btn-overlay visibleAfterLoad" title="Change hat duck overlay color">🎨</button>
-                <button id="toggle-overlays" class="btn btn-press btn-dark btn-overlay visibleAfterLoad" title="Toggle hat overlay visibility"></button>
-                <button id="toggle-dark-mode" class="btn btn-press btn-dark" title="Toggle Dark Mode">🌙</button>
+
+                <div class="color-dropdown visibleAfterLoad">
+                  <button id="toggle-overlay-colors" class="btn btn-press btn-circle btn-colors visibleAfterLoad" title="Change hat duck overlay color"><div>🎨</div></button>
+                  <div class="menu"></div>
+                  <template id="color-template">
+                    <button class="btn btn-press btn-color-option"><div></div></button>
+                  </template>
+                </div>
+                <button id="toggle-overlays" class="btn btn-press btn-circle btn-overlay visibleAfterLoad" title="Toggle hat overlay visibility"></button>
+                <button id="toggle-dark-mode" class="btn btn-press btn-circle btn-dark" title="Toggle Dark Mode"><div>🌙</div></button>
                 <button class="btn btn-press btn-small github-link">
                   <a target="blank" href="https://github.com/chk1/dg-hat-converter" title="Source code at GitHub">
-                    <svg height="32" width="32" viewBox="0 0 16 16" style="fill:rgb(200, 200, 200)">
+                    <svg height="37" width="37" viewBox="0 0 16 16" style="fill:rgb(200, 200, 200)">
                       <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
                   </a>
@@ -38,7 +44,7 @@
             </div>
 
             <div id="hats">
-                <button id="clear-hats" class="btn btn-press btn-clear visibleAfterLoad" hidden title="Clear all loaded hats.">
+                <button id="clear-hats" class="btn btn-press btn-clear visibleAfterLoad" title="Clear all loaded hats.">
                   <div>ⓧ</div>
                 </button>
                 <div id="hats-output">

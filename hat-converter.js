@@ -309,13 +309,17 @@ function getImageTemplate(hatWidth){
 	else if (hatWidth === 64) {
 		return 2
 	}
+	else if (hatWidth > 64 && hatWidth < 96) {
+		console.log("Hat width has a semi-cape, missing pixels from cape.");
+		return 3
+	}
 	else if (hatWidth === 96) {
 		return 3
 	}
 	else if (hatWidth === 97) {
 		return 4
 	}
-	else if (hatWidth > 96) {
+	else if (hatWidth > 97) {
 		console.log("Hat width is greater than 97px, using largest template available.");
 		return 4
 	}
@@ -350,7 +354,10 @@ function toggleDuckOverlayColors(){
 		currentColorIndex = 0;
 	}
 	var newColorName = Object.keys(duckColors)[currentColorIndex];
-	var newColors = Object.values(duckColors)[currentColorIndex];
+	setDuckOverlayColorByName(newColorName);
+}
+function setDuckOverlayColorByName(newColorName){
+	var newColors = duckColors[newColorName];
 	console.log(`Changing duck color overlay to ${newColorName}.`);
 	setDuckOverlayColor(newColors);
 }
@@ -467,6 +474,29 @@ async function replaceColors(src, replacements) {
     }
     ctx.putImageData(imageData, 0, 0);
     return canvas.toDataURL("image/png");
+}
+
+loadColorOptionDropdown();
+function loadColorOptionDropdown(){
+	const menu = document.querySelector(".menu");
+	const template = document.getElementById("color-template");
+
+	const colorNames = Object.entries(duckColors);
+	colorNames.forEach(([name, color]) => {
+		const clone = template.content.cloneNode(true);
+		const btn = clone.querySelector("button");
+		const btnText = btn.querySelector("div");
+
+		btnText.textContent = name;
+		btn.style.background = color.light;
+		btn.dataset.color = color.light;
+
+		btn.addEventListener("click", () => {
+			setDuckOverlayColorByName(name);
+		});
+
+		menu.appendChild(clone);
+	});
 }
 
 const toggleOverlaysButton = document.getElementById("toggle-overlays");
