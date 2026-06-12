@@ -4,8 +4,8 @@ body, html{
     padding: 0;
     margin: 0;
     font-family: sans-serif;
-    background-color: #dedede;
-    color: black;
+    background-color: #262626;
+    color: rgb(163, 163, 163);
 }
 .flex {
     display: flex;
@@ -13,7 +13,6 @@ body, html{
     flex-direction: column;
     text-align: center;
     height: 100%;
-    max-width: 800px;
     margin: 0px auto;
 }
 .content {
@@ -22,10 +21,11 @@ body, html{
     text-align: left;
     box-sizing: border-box;
     border: 5px solid #eee;
-    padding: 30px;
+    padding-left: 12px;
     border-radius: 10px;
     background: #fff;
     transition: background 0.1s, border 0.1s;
+    background: #383838;
 }
 .content.drop {
     background-color: #eee;
@@ -35,13 +35,15 @@ body, html{
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    align-content: flex-start;
     width: 100%;
-    height: 500px;
     overflow-y: scroll;
+    min-height: calc(100vh - 300px);
+    max-height: calc(100vh - 200px);
 }
 .duck-out {
     width: 200px;
-    padding: 10px;
+    padding: 1px;
     border-radius: 3px;
     text-align: center;
 }
@@ -50,6 +52,9 @@ body, html{
     border: 1px solid #dedede;
     width: 192px;
     image-rendering: crisp-edges;
+    max-height: 96px;
+    display: block;
+    object-fit: contain;
 }
 .duck-out img:hover {
     border-color: #bbb;
@@ -59,25 +64,96 @@ body, html{
     text-overflow: ellipsis;
     overflow: hidden;
     font-family: monospace;
+    padding: 3px;
+    margin: 2px;
+    margin-bottom: -3px;
+    border-radius: 10px 10px 0 0;
+    background: #76767638;
 }
 h1 {
     margin-top: 5px;
+    margin-bottom: 5px;
+}
+.wavy-underline {
     text-decoration: underline;
     text-decoration-style: wavy;
     text-decoration-thickness: 2px;
     text-decoration-color: #bbb;
 }
+.top-info {
+    padding: 1px;
+    position: relative;
+}
 .info {
     font-size: 80%;
-    padding: 20px;
+    padding: 2px;
 }
 a {
     transition: color 0.1s;
-    color: blue;
+    color: rgb(100, 100, 255);
     text-decoration: none;
 }
 a:hover {
-    color: #66f;
+    color: rgb(148, 148, 255);
     text-decoration: underline;
     cursor: pointer;
+}
+p {
+    margin: 5px 0px;
+}
+div.github-link {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+.github-link {
+    height: 20px;
+}
+.github-link svg {
+    scale: 0.8;
+}
+.button-small:hover {
+    filter: drop-shadow(2px 4px 6px black);
+}
+/* https://getcssscan.com/css-buttons-examples */
+.button-big {
+    align-items: center;
+    appearance: none;
+    background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
+    border: 0;
+    border-radius: 6px;
+    box-shadow: rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, rgba(58, 65, 111, .5) 0 -3px 0 inset;
+    box-sizing: border-box;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: "JetBrains Mono", monospace;
+    height: 48px;
+    justify-content: center;
+    line-height: 1;
+    list-style: none;
+    overflow: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
+    position: relative;
+    text-align: left;
+    text-decoration: none;
+    transition: box-shadow .15s, transform .15s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    white-space: nowrap;
+    will-change: box-shadow, transform;
+    font-size: 18px;
+}
+.button-big:hover {
+    box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
+    transform: translateY(-2px);
+}
+.button-big:focus {
+    box-shadow: #3c4fe0 0 0 0 1.5px inset, rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
+}
+.button-big:active {
+    box-shadow: #3c4fe0 0 3px 7px inset;
+    transform: translateY(2px);
 }

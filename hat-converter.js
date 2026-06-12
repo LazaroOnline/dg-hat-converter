@@ -4,6 +4,8 @@ Web interface events and listeners
 
 */
 const downloadZipButton = document.getElementById("downloadZip")
+const downloadMsg = document.querySelector(".download-msg")
+
 
 // handle file "uploads"
 async function handleFiles(files) {
@@ -18,6 +20,7 @@ async function handleFiles(files) {
 	finally {
 		if (hats.length > 0) {
 			downloadZipButton.hidden = false;
+			downloadMsg.hidden = false;
 		}
 		inputElement.value = ''; // Clear the file input for better UX, allowing the same files to be selected again if needed.
 	}
