@@ -60,6 +60,22 @@ body.dark-mode, .dark-mode .info {
     padding: 1px;
     border-radius: 3px;
     text-align: center;
+    position: relative;
+}
+.duck-out .hat-image-overlay {
+    position: absolute;
+    top: 22px;
+    left: 2px;
+    border: 0px;
+    opacity: 1;
+    z-index: 0;
+    /* filter: drop-shadow(2px 4px 6px black); */
+}
+.duck-out .hat-image-overlay-wing {
+    z-index: 3;
+}
+.duck-out .hat-image-is-bigger {
+    opacity: 0.6;
 }
 .duck-out img {
     margin: 3px;
@@ -69,6 +85,8 @@ body.dark-mode, .dark-mode .info {
     max-height: 96px;
     display: block;
     object-fit: contain;
+    position: relative;
+    z-index: 2;
 }
 .duck-out img:hover {
     border-color: #bbb;
@@ -157,6 +175,9 @@ div.github-link {
     margin-top: 3px;
     height: 26px;
 }
+.btn-overlay {
+    margin-right: 5px;
+}
 .btn-clear {
     position: sticky;
     float: left;
@@ -165,6 +186,7 @@ div.github-link {
     height: 0;
     font-size: 17px;
     filter: grayscale(1);
+    z-index: 10;
 }
 .btn-clear div {
     background: white;

@@ -4,8 +4,9 @@ Web interface events and listeners
 
 */
 const downloadZipButton = document.getElementById("downloadZip")
-const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
 const hatsOutput = document.getElementById("hats-output")
+const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
+visibleAfterLoad.forEach(el => el.hidden = true);
 
 // handle file "uploads"
 async function handleFiles(files) {
@@ -127,9 +128,9 @@ async function loadHatFile(file) {
 
 const inputElement = document.getElementById("upload");
 inputElement.addEventListener("change", () => handleFiles(inputElement.files), false);
-const clearHatsButton = document.getElementById("clear-hats")
+const clearHatsButton = document.getElementById("clear-hats");
 clearHatsButton.addEventListener("click", () => {
-	// hats = []; // It's a const, prevent reassigment.
+	// hats = []; // It's a const, prevent reassignment.
 	hats.splice(0, hats.length);
 	hatsOutput.innerHTML = "";
 	downloadZipButton.hidden = true;
@@ -296,12 +297,70 @@ function getNameDescription(name, hatFileName, newFileName) {
 	return nameDesc;
 }
 
+function getImageTemplate(hatWidth){
+	if (hatWidth < 32) {
+		console.log("Hat width is smaller than 32px, hiding duck template overlay.");
+		return 0 // no image or fallback to "./media/Template-1x.png"
+	}
+	if (hatWidth === 32) {
+		return 1
+	}
+	else if (hatWidth === 64) {
+		return 2
+	}
+	else if (hatWidth === 96) {
+		return 3
+	}
+	else if (hatWidth === 97) {
+		return 4
+	}
+	else if (hatWidth > 96) {
+		console.log("Hat width is greater than 97px, using largest template available.");
+		return 4
+	}
+}
+
+const toggleOverlaysButton = document.getElementById("toggle-overlays");
+toggleOverlaysButton.addEventListener("click", toggleDuckOverlayVisibility);
+function toggleDuckOverlayVisibility(){
+	const duckTemplateElements = document.querySelectorAll(".hat-image-overlay");
+	const wasHidden = duckTemplateElements[0]?.parentElement?.hidden ?? false;
+	const isHiddenNow = !wasHidden;
+	duckTemplateElements.forEach(el => {
+		el.parentElement.hidden = isHiddenNow;
+	});
+	// console.log(`Toggling duck template overlay visibility ${isHiddenNow}.`);
+	setVisibilityIcon(!isHiddenNow);
+}
+let visibilityIcons = "🤓🫣";
+/*
+Other possible icons:
+visibilityIcons = "🤓🫣";
+visibilityIcons = "🧐😵";
+visibilityIcons = "😗😙";
+visibilityIcons = "😶😌";
+visibilityIcons = "👁️👁️";
+visibilityIcons = "🙉🙈";
+visibilityIcons = "🕶👓";
+visibilityIcons = "◉◎";
+*/
+
+function setVisibilityIcon(visible = true) {
+
+	const emojis = [...visibilityIcons];
+	const emoji1 = emojis[0];
+	const emoji2 = emojis[1];
+	toggleOverlaysButton.innerText = visible? emoji1 : emoji2;
+}
+setVisibilityIcon();
 const hatTemplate = document.getElementById("hat-template");
 function createOutputElem(name, hatFileName, newFileName, blob){
 	const hatContainer = hatTemplate.content.cloneNode(true);
-	const img = hatContainer.querySelector("img");
-	const a = hatContainer.querySelector("a");
-	const title = hatContainer.querySelector(".title")
+	const img = hatContainer.querySelector("img.hat-image");
+	const a = hatContainer.querySelector("a");;
+	const title = hatContainer.querySelector(".title");
+	const imgOverlay = hatContainer.querySelector(".hat-image-overlay");
+	const imgOverlayWing = hatContainer.querySelector(".hat-image-overlay-wing");
 
 	const nameDesc = getNameDescription(name, hatFileName, newFileName)
 	title.innerText = nameDesc
@@ -310,6 +369,18 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 	img.src = URL.createObjectURL(blob)
 	img.alt = `Image for ${hatFileName}`
 	// img.title = `Download ${newFileName}.png`
+
+	img.onload = () => {
+		const templateIndex = getImageTemplate(img.naturalWidth)
+		if (templateIndex > 0) {
+			imgOverlay.src = `./media/Template-${templateIndex}x.png`
+			imgOverlayWing.src = `./media/Template-${templateIndex}x-wing.png`
+			if (img.naturalWidth > 97) {
+				imgOverlay.classList.add("hat-image-is-bigger");
+				imgOverlayWing.classList.add("hat-image-is-bigger");
+			}
+		}
+	};
 
 	a.href = img.src
 	a.download = `${newFileName}.png`

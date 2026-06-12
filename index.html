@@ -23,6 +23,7 @@
                 <a id="downloadZip" hidden><button class="btn btn-main">Download All as ZIP</button></a>
               </div>
               <div class="button-list">
+                <button id="toggle-overlays" class="btn btn-press btn-dark btn-overlay visibleAfterLoad" title="Toggle hat overlay visibility"></button>
                 <button id="toggle-dark-mode" class="btn btn-press btn-dark" title="Toggle Dark Mode">🌙</button>
                 <button class="btn btn-press btn-small github-link">
                   <a target="blank" href="https://github.com/chk1/dg-hat-converter" title="Source code at GitHub">
@@ -46,7 +47,13 @@
                     <div class="duck-out">
                       <div class="title" title="">Title here</div>
                       <a href="" download="">
-                        <img src="" alt="" />
+                        <div>
+                          <img class="hat-image-overlay" src="" alt="" />
+                          <img class="hat-image-overlay hat-image-overlay-wing" src="" alt="" />
+                        </div>
+                        <div>
+                          <img class="hat-image" src="" alt="" />
+                        </div>
                       </a>
                     </div>
                 </template>
