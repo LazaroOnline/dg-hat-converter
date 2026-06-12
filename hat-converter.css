@@ -4,8 +4,12 @@ body, html{
     padding: 0;
     margin: 0;
     font-family: sans-serif;
+    background-color: #dedede;
+}
+body.dark-mode, .dark-mode .info {
     background-color: #262626;
     color: rgb(163, 163, 163);
+    scrollbar-color: #272727 #4c4b4b;
 }
 .flex {
     display: flex;
@@ -25,21 +29,27 @@ body, html{
     border-radius: 10px;
     background: #fff;
     transition: background 0.1s, border 0.1s;
+    background: white;
+}
+.dark-mode .content {
     background: #383838;
 }
 .content.drop {
     background-color: #eee;
     border-color: rgb(255, 193, 193);
 }
-#out {
+#hats {
+    overflow-y: auto;
+    position: relative;
+    min-height: calc(100vh - 300px);
+    max-height: calc(100vh - 170px);
+}
+#hats-output {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     align-content: flex-start;
     width: 100%;
-    overflow-y: scroll;
-    min-height: calc(100vh - 300px);
-    max-height: calc(100vh - 200px);
 }
 .duck-out {
     width: 200px;
@@ -101,6 +111,13 @@ a:hover {
 p {
     margin: 5px 0px;
 }
+
+.button-list {
+    display: flex;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
 div.github-link {
     position: absolute;
     top: 8px;
@@ -112,11 +129,42 @@ div.github-link {
 .github-link svg {
     scale: 0.8;
 }
-.button-small:hover {
-    filter: drop-shadow(2px 4px 6px black);
+.btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    outline: inherit;
+    color: black;
+}
+.dark-mode .btn {
+    color: white;
+}
+.btn:hover {
+    filter: drop-shadow(1px 2px 4px black);
+}
+.btn-dark {
+    font-size: 19px;
+    background: #c8c8c8;
+    border-radius: 22px;
+    margin-top: 3px;
+    height: 26px;
+}
+.btn-clear {
+    position: absolute;
+    top: 0px;
+    right: 4px;
+    font-size: 17px;
+    filter: grayscale(1);
+}
+.btn-clear:hover {
+    filter: grayscale(1) drop-shadow(2px 4px 6px black);
+}
+.btn-small:hover {
+    filter: drop-shadow(1px 2px 4px black);
 }
 /* https://getcssscan.com/css-buttons-examples */
-.button-big {
+.btn-main {
     align-items: center;
     appearance: none;
     background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
@@ -128,7 +176,7 @@ div.github-link {
     cursor: pointer;
     display: inline-flex;
     font-family: "JetBrains Mono", monospace;
-    height: 48px;
+    height: 30px;
     justify-content: center;
     line-height: 1;
     list-style: none;
@@ -146,14 +194,21 @@ div.github-link {
     will-change: box-shadow, transform;
     font-size: 18px;
 }
-.button-big:hover {
+.btn-main:hover {
     box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
     transform: translateY(-2px);
 }
-.button-big:focus {
+.btn-main:focus {
     box-shadow: #3c4fe0 0 0 0 1.5px inset, rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
 }
-.button-big:active {
+.btn-main:active {
     box-shadow: #3c4fe0 0 3px 7px inset;
     transform: translateY(2px);
+}
+
+.btn-press:hover {
+    transform: translateY(-1px);
+}
+.btn-press:active {
+    transform: translateY(1px);
 }

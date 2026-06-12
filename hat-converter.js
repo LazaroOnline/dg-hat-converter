@@ -4,8 +4,8 @@ Web interface events and listeners
 
 */
 const downloadZipButton = document.getElementById("downloadZip")
-const downloadMsg = document.querySelector(".download-msg")
-
+const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
+const hatsOutput = document.getElementById("hats-output")
 
 // handle file "uploads"
 async function handleFiles(files) {
@@ -20,13 +20,17 @@ async function handleFiles(files) {
 	finally {
 		if (hats.length > 0) {
 			downloadZipButton.hidden = false;
-			downloadMsg.hidden = false;
+			visibleAfterLoad.forEach(el => el.hidden = false);
 		}
 		inputElement.value = ''; // Clear the file input for better UX, allowing the same files to be selected again if needed.
 	}
 }
 
 async function loadHatFileList(files) {
+	if (files.length === 0) {
+		console.log("No files to process.");
+		return;
+	}
 	const BATCH_SIZE = 100;
 	const promises = await batchProcessArray(files, loadHatFile, BATCH_SIZE);
 	const hatPromises = await Promise.all(promises);
@@ -123,6 +127,30 @@ async function loadHatFile(file) {
 
 const inputElement = document.getElementById("upload");
 inputElement.addEventListener("change", () => handleFiles(inputElement.files), false);
+const clearHatsButton = document.getElementById("clear-hats")
+clearHatsButton.addEventListener("click", () => {
+	// hats = []; // It's a const, prevent reassigment.
+	hats.splice(0, hats.length);
+	hatsOutput.innerHTML = "";
+	downloadZipButton.hidden = true;
+	visibleAfterLoad.forEach(el => el.hidden = true);
+	console.log("Cleared all hats.");
+});
+
+function toggleDarkMode() {
+	const darkModeClass = "dark-mode";
+	document.body.classList.toggle(darkModeClass);
+	console.log("Toggled dark mode.");
+}
+const toggleDarkModeButton = document.getElementById("toggle-dark-mode")
+toggleDarkModeButton.addEventListener("click", () => {
+	toggleDarkMode();
+});
+
+const darkModeMql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+if (darkModeMql && darkModeMql.matches) {
+	toggleDarkMode();
+}
 
 let dropArea = document.getElementById("dropArea");
 let dropbox = document.getElementById("uploadbox");
@@ -291,7 +319,7 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 
 	cont.appendChild(title)
 	cont.appendChild(a)
-	document.getElementById("out").appendChild(cont)
+	hatsOutput.appendChild(cont)
 }
 
 async function tryCreateZip(hats){
