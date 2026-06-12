@@ -420,72 +420,86 @@ async function preloadDuckColorsFromWhite(newDuckColor){
 	newDuckColor.w3 = await replaceDuckColorsFromWhite(duckColors.white.w3, newDuckColor);
 	newDuckColor.w4 = await replaceDuckColorsFromWhite(duckColors.white.w4, newDuckColor);
 }
+
+async function replaceHatTransparentPink(imgSrc){
+	return await tryReplaceColors(imgSrc, [
+		{ oldColor: "#ff00ff", newColor: "#ff00ff00" }
+	]);
+}
 async function replaceDuckColorsFromWhite(imgSrc, newDuckColor){
-	try {
-	return await replaceColors(imgSrc, [
+	return await tryReplaceColors(imgSrc, [
 		{ oldColor: "#FFFFFF", newColor: newDuckColor.light },
 		{ oldColor: "#9d9d9d", newColor: newDuckColor.dark }
 	]);
+}
+async function tryReplaceColors(imgSrc, replacements){
+	try {
+		return await replaceColors(imgSrc, replacements);
 	} catch(e) {
 		console.error(`Error replacing image color for: ${imgSrc}`, e);
 		return null;
 	}
 }
+function hexToRgb(hex) {
+	hex = hex.replace("#", "");
+	if (hex.length === 3) {
+		hex = hex.split("").map(x => x + x).join("");
+	}
+	return {
+		 r: parseInt(hex.substring(0, 2), 16)
+		,g: parseInt(hex.substring(2, 4), 16)
+		,b: parseInt(hex.substring(4, 6), 16)
+		,a: parseInt(hex.substring(6, 8), 16)
+	};
+}
 async function replaceColors(src, replacements) {
-    function hexToRgb(hex) {
-        hex = hex.replace("#", "");
-        if (hex.length === 3) {
-            hex = hex.split("").map(x => x + x).join("");
-        }
-        return {
-            r: parseInt(hex.substring(0, 2), 16),
-            g: parseInt(hex.substring(2, 4), 16),
-            b: parseInt(hex.substring(4, 6), 16)
-        };
-    }
-    const lookup = new Map();
-    for (const pair of replacements) {
-        const oldRgb = hexToRgb(pair.oldColor);
-        const newRgb = hexToRgb(pair.newColor);
+	const lookup = new Map();
+	for (const pair of replacements) {
+		const oldRgb = hexToRgb(pair.oldColor);
+		const newRgb = hexToRgb(pair.newColor);
 
-        const key =
-            (oldRgb.r << 16) |
-            (oldRgb.g << 8) |
-             oldRgb.b;
+		const key =
+			(oldRgb.r << 16) |
+			(oldRgb.g << 8) |
+				oldRgb.b;
 
-        lookup.set(key, newRgb);
-    }
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = src;
-    });
+		lookup.set(key, newRgb);
+	}
+	const img = new Image();
+	img.crossOrigin = "anonymous";
+	await new Promise((resolve, reject) => {
+		img.onload = resolve;
+		img.onerror = reject;
+		img.src = src;
+	});
 
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
+	const canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        const key =
-            (data[i] << 16) |
-            (data[i + 1] << 8) |
-             data[i + 2];
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(img, 0, 0);
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const data = imageData.data;
+	for (let i = 0; i < data.length; i += 4) {
+		const key =
+			(data[i] << 16) |
+			(data[i + 1] << 8) |
+				data[i + 2];
 
-        const replacement = lookup.get(key);
-        if (replacement) {
-            data[i] = replacement.r;
-            data[i + 1] = replacement.g;
-            data[i + 2] = replacement.b;
-        }
-    }
-    ctx.putImageData(imageData, 0, 0);
-    return canvas.toDataURL("image/png");
+		const replacement = lookup.get(key);
+		if (replacement) {
+			data[i] = replacement.r;
+			data[i + 1] = replacement.g;
+			data[i + 2] = replacement.b;
+			const hasTransparencyData = !isNaN(replacement.a);
+			if (hasTransparencyData) {
+			data[i + 3] = replacement.a;
+			}
+		}
+	}
+	ctx.putImageData(imageData, 0, 0);
+	return canvas.toDataURL("image/png");
 }
 
 loadColorOptionDropdown();
@@ -558,6 +572,8 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 	title.title = `Original file name: ${hatFileName}\nHat metadata name: ${name}\nOutput file name: ${newFileName}.png`
 
 	img.src = URL.createObjectURL(blob)
+	// img.src = await replaceHatTransparentPink(img.src);
+	replaceHatTransparentPink(img.src).then(r => img.src = r);
 	img.alt = `Image for ${hatFileName}`
 	// img.title = `Download ${newFileName}.png`
 
