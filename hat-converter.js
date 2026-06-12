@@ -296,30 +296,24 @@ function getNameDescription(name, hatFileName, newFileName) {
 	return nameDesc;
 }
 
+const hatTemplate = document.getElementById("hat-template");
 function createOutputElem(name, hatFileName, newFileName, blob){
-	const cont = document.createElement("div")
-	const img = document.createElement("img")
-	const title = document.createElement("div")
-	const a = document.createElement("a")
-	// img.title = `Download ${newFileName}.png`
+	const hatContainer = hatTemplate.content.cloneNode(true);
+	const img = hatContainer.querySelector("img");
+	const a = hatContainer.querySelector("a");
+	const title = hatContainer.querySelector(".title")
 
-	cont.className = "duck-out"
-
-	title.className = "title"
 	const nameDesc = getNameDescription(name, hatFileName, newFileName)
 	title.innerText = nameDesc
 	title.title = `Original file name: ${hatFileName}\nHat metadata name: ${name}\nOutput file name: ${newFileName}.png`
 
 	img.src = URL.createObjectURL(blob)
 	img.alt = `Image for ${hatFileName}`
+	// img.title = `Download ${newFileName}.png`
 
 	a.href = img.src
 	a.download = `${newFileName}.png`
-	a.appendChild(img)
-
-	cont.appendChild(title)
-	cont.appendChild(a)
-	hatsOutput.appendChild(cont)
+	hatsOutput.appendChild(hatContainer)
 }
 
 async function tryCreateZip(hats){
