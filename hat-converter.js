@@ -5,8 +5,11 @@ Web interface events and listeners
 */
 const downloadZipButton = document.getElementById("downloadZip")
 const hatsOutput = document.getElementById("hats-output")
-const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
-visibleAfterLoad.forEach(el => el.hidden = true);
+setVisibleAfterLoad(false);
+function setVisibleAfterLoad(visible) {
+	const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
+	visibleAfterLoad.forEach(el => el.hidden = !visible);
+}
 
 // handle file "uploads"
 async function handleFiles(files) {
@@ -21,7 +24,7 @@ async function handleFiles(files) {
 	finally {
 		if (hats.length > 0) {
 			downloadZipButton.hidden = false;
-			visibleAfterLoad.forEach(el => el.hidden = false);
+			setVisibleAfterLoad(true);
 		}
 		inputElement.value = ''; // Clear the file input for better UX, allowing the same files to be selected again if needed.
 	}
@@ -120,6 +123,9 @@ async function loadHatFile(file) {
 	}
 	else {
 		hats.push(hat);
+		if (hats.length == 1) {
+			setVisibleAfterLoad(true);
+		}
 		createOutputElem(hat.name, hat.hatFileName, hat.newFileName, hat.blob);
 		console.log(`Processed file: ${hat.hatFileName} -> ${hat.newFileName}.png`);
 	}
@@ -129,14 +135,15 @@ async function loadHatFile(file) {
 const inputElement = document.getElementById("upload");
 inputElement.addEventListener("change", () => handleFiles(inputElement.files), false);
 const clearHatsButton = document.getElementById("clear-hats");
-clearHatsButton.addEventListener("click", () => {
+clearHatsButton.addEventListener("click", clearHatList);
+function clearHatList() {
 	// hats = []; // It's a const, prevent reassignment.
 	hats.splice(0, hats.length);
 	hatsOutput.innerHTML = "";
 	downloadZipButton.hidden = true;
-	visibleAfterLoad.forEach(el => el.hidden = true);
+	setVisibleAfterLoad(false);
 	console.log("Cleared all hats.");
-});
+}
 
 function toggleDarkMode() {
 	const darkModeClass = "dark-mode";
@@ -144,9 +151,7 @@ function toggleDarkMode() {
 	console.log("Toggled dark mode.");
 }
 const toggleDarkModeButton = document.getElementById("toggle-dark-mode")
-toggleDarkModeButton.addEventListener("click", () => {
-	toggleDarkMode();
-});
+toggleDarkModeButton.addEventListener("click", toggleDarkMode);
 
 const darkModeMql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
 if (darkModeMql && darkModeMql.matches) {
@@ -356,12 +361,19 @@ function toggleDuckOverlayColors(){
 	var newColorName = Object.keys(duckColors)[currentColorIndex];
 	setDuckOverlayColorByName(newColorName);
 }
+function setDuckOverlayColorByIndex(currentColorIndex){
+	var newColorName = Object.keys(duckColors)[currentColorIndex];
+	setDuckOverlayColorByName(newColorName);
+}
 function setDuckOverlayColorByName(newColorName){
 	var newColors = duckColors[newColorName];
 	console.log(`Changing duck color overlay to ${newColorName}.`);
 	setDuckOverlayColor(newColors);
 }
 function setDuckOverlayColor(newDuckColor){
+	if (newDuckColor == null) {
+		return;
+	}
 	var imgWingList = document.querySelectorAll(".hat-image-overlay-wing");
 	for (var imgWing of imgWingList) {
 		var templateIndex = imgWing.getAttribute(customAttributeTemplateIndex);
@@ -593,3 +605,22 @@ async function createZip(hats){
 	downloadZipButton.href = URL.createObjectURL(content)
 	downloadZipButton.download = "hats.zip"
 };
+
+
+document.addEventListener("keydown", (e) => {
+	const colorNumbers = [1, 2, 3, 4, 5, 6, 7, 8];
+	const selectColorByNumber = colorNumbers.some(c => c == e.key);
+	if (selectColorByNumber) {
+		const newColorIndex = e.key -1;
+		setDuckOverlayColorByIndex(newColorIndex);
+	}
+	if (e.shiftKey && e.key.toUpperCase() == "C") {
+		toggleDuckOverlayColors();
+	}
+	if (e.shiftKey && e.key.toUpperCase() == "D") {
+		toggleDarkMode();
+	}
+	if (e.shiftKey && e.key.toUpperCase() == "V") {
+		toggleDuckOverlayVisibility();
+	}
+});
