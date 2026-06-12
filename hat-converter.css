@@ -160,11 +160,23 @@ div.github-link {
 .btn-clear {
     position: sticky;
     float: left;
-    top: 3px;
-    left: 5px;
+    top: 5px;
+    left: 3px;
     height: 0;
     font-size: 17px;
     filter: grayscale(1);
+}
+.btn-clear div {
+    background: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.dark-mode .btn-clear div {
+    background: #626262;
 }
 .btn-clear:hover {
     filter: grayscale(1) drop-shadow(2px 4px 6px black);
