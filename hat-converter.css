@@ -145,17 +145,6 @@ p {
     right: 8px;
     gap: 6px;
 }
-div.github-link {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-}
-.github-link {
-    height: 20px;
-}
-.github-link svg {
-    scale: 1;
-}
 .btn {
     background: none;
     border: none;
@@ -163,6 +152,17 @@ div.github-link {
     cursor: pointer;
     outline: inherit;
     color: black;
+}
+.btn:focus {
+  outline: 1px solid gray;
+  outline-offset: 2px;
+}
+.btn-github {
+    height: 37px;
+    border-radius: 50%;
+}
+.btn-github:hover {
+    filter: drop-shadow(1px 2px 4px black);
 }
 .dark-mode .btn {
     color: white;
@@ -180,33 +180,46 @@ div.github-link {
 .btn-circle div {
     filter: drop-shadow(0px 0px 1px #00000055);
 }
-.btn-clear {
+.btn-dark {
+    position: relative;
+}
+.btn-dark .moon {
+    top: 3px;
+    position: absolute;
+    filter: drop-shadow(0px 1px 2px #00000099);
+    left: 5px;
+    font-size: 23px;
+}
+.btn-clear-container {
     position: sticky;
     float: left;
+    height: 0px;
     top: 5px;
     left: 3px;
-    height: 0;
-    font-size: 17px;
-    filter: grayscale(1);
     z-index: 10;
 }
-.btn-clear div {
-    background: white;
+.btn-clear {
     border-radius: 50%;
-    width: 16px;
     height: 16px;
+    width: 16px;
+    font-size: 15px;
+    filter: grayscale(1);
+    background: white;
+}
+.dark-mode .btn-clear {
+    background: #626262;
+}
+.btn-clear div {
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.dark-mode .btn-clear div {
-    background: #626262;
+.btn-clear:focus {
+    outline-offset: 0px;
 }
 .btn-clear:hover {
     filter: grayscale(1) drop-shadow(2px 4px 6px black);
-}
-.btn-small:hover {
-    filter: drop-shadow(1px 2px 4px black);
+    outline-offset: -1px;
 }
 /* https://getcssscan.com/css-buttons-examples */
 .btn-main {
@@ -251,7 +264,7 @@ div.github-link {
     transform: translateY(2px);
 }
 
-.btn-press:hover {
+.btn-press:hover, .btn-press:focus {
     transform: translateY(-1px);
 }
 .btn-press:active {
@@ -259,14 +272,15 @@ div.github-link {
 }
 
 .color-dropdown {
-  position: relative;
-  display: inline-block;
+    position: relative;
+    display: inline-block;
 }
 .menu {
   position: absolute;
   top: 100%;
   left: -50%;
-  display: none;
+  display: flex;
+  /* display: none; */
   flex-direction: column;
   gap: 4px;
   padding: 6px;
@@ -274,16 +288,27 @@ div.github-link {
   min-width: 60px;
   border-radius: 11px;
   z-index: 100;
+
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 .color-dropdown:hover .menu {
-  display: flex;
+    /* display: flex; */
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 .btn-color-option {
     /* border: 1px solid #111111; */
-  border: none;
+    border: none;
     color: #111111;
     height: 24px;
     border-radius: 10px;
+}
+.dark-mode .btn:focus {
+  outline: 1px solid white;
 }
 .btn-color-option div {
     color: black;
