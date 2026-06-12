@@ -297,6 +297,7 @@ function getNameDescription(name, hatFileName, newFileName) {
 	return nameDesc;
 }
 
+const customAttributeTemplateIndex = "template-index"
 function getImageTemplate(hatWidth){
 	if (hatWidth < 32) {
 		console.log("Hat width is smaller than 32px, hiding duck template overlay.");
@@ -318,6 +319,154 @@ function getImageTemplate(hatWidth){
 		console.log("Hat width is greater than 97px, using largest template available.");
 		return 4
 	}
+	return null;
+}
+
+const duckColors = {
+	 white: { light: "#FFFFFF", dark: "#9d9d9d",
+		 t1: "./media/Template-1x.png"
+		,t2: "./media/Template-2x.png"
+		,t3: "./media/Template-3x.png"
+		,t4: "./media/Template-4x.png"
+		,w1: "./media/Template-1x-wing.png"
+		,w2: "./media/Template-2x-wing.png"
+		,w3: "./media/Template-3x-wing.png"
+		,w4: "./media/Template-4x-wing.png"
+	 }
+	,gray: { light: "#807c73", dark: "#5b5652"}
+	,yellow: {light: "#ffdc58", dark: "#ba993c"}
+	,brown: {light: "#d76816", dark: "#95490d"}
+	,pink: {light: "#ff6975", dark: "#d0545f"}
+	,purple: {light: "#ac56dd", dark: "#8a26be"}
+	,blue: {light: "#2fa2f2", dark: "#0a7cba"}
+	,green: {light: "#00874b", dark: "#006637"}
+}
+let currentColorIndex = 0;
+const toggleOverlayColorsButton = document.getElementById("toggle-overlay-colors");
+toggleOverlayColorsButton.addEventListener("click", toggleDuckOverlayColors);
+function toggleDuckOverlayColors(){
+	currentColorIndex++;
+	if (currentColorIndex >= 8) {
+		currentColorIndex = 0;
+	}
+	var newColorName = Object.keys(duckColors)[currentColorIndex];
+	var newColors = Object.values(duckColors)[currentColorIndex];
+	console.log(`Changing duck color overlay to ${newColorName}.`);
+	setDuckOverlayColor(newColors);
+}
+function setDuckOverlayColor(newDuckColor){
+	var imgWingList = document.querySelectorAll(".hat-image-overlay-wing");
+	for (var imgWing of imgWingList) {
+		var templateIndex = imgWing.getAttribute(customAttributeTemplateIndex);
+		if (templateIndex === "null") {
+			continue;
+		}
+		imgWing.src = newDuckColor["w" + templateIndex];
+		if (imgWing.src == null) {
+			console.log("NULL overlay image wing detected!");
+		}
+	}
+	var imgBodyList = document.querySelectorAll(".hat-image-overlay-body");
+	for (var imgBody of imgBodyList) {
+		var templateIndex = imgBody.getAttribute(customAttributeTemplateIndex);
+		if (templateIndex === "null") {
+			continue;
+		}
+		imgBody.src = newDuckColor["t" + templateIndex];
+		if (imgBody.src == null) {
+			console.log("NULL overlay image body detected!");
+		}
+	}
+}
+preloadDuckOverlayColors();
+async function preloadDuckOverlayColors(newDuckColor){
+	var colorNames = Object.keys(duckColors);
+	for (var colorName of colorNames) {
+		var newDuckColor = duckColors[colorName];
+		await preloadDuckColorsFromWhite(newDuckColor);
+		console.log(`Preloaded overlay colors ${colorName}`, newDuckColor);
+	}
+}
+
+async function preloadDuckColorsFromWhite(newDuckColor){
+	if (newDuckColor.t1 != null) {
+		return; // already loaded.
+	}
+	newDuckColor.t1 = await replaceDuckColorsFromWhite(duckColors.white.t1, newDuckColor);
+	newDuckColor.t2 = await replaceDuckColorsFromWhite(duckColors.white.t2, newDuckColor);
+	newDuckColor.t3 = await replaceDuckColorsFromWhite(duckColors.white.t3, newDuckColor);
+	newDuckColor.t4 = await replaceDuckColorsFromWhite(duckColors.white.t4, newDuckColor);
+	newDuckColor.w1 = await replaceDuckColorsFromWhite(duckColors.white.w1, newDuckColor);
+	newDuckColor.w2 = await replaceDuckColorsFromWhite(duckColors.white.w2, newDuckColor);
+	newDuckColor.w3 = await replaceDuckColorsFromWhite(duckColors.white.w3, newDuckColor);
+	newDuckColor.w4 = await replaceDuckColorsFromWhite(duckColors.white.w4, newDuckColor);
+}
+async function replaceDuckColorsFromWhite(imgSrc, newDuckColor){
+	try {
+	return await replaceColors(imgSrc, [
+		{ oldColor: "#FFFFFF", newColor: newDuckColor.light },
+		{ oldColor: "#9d9d9d", newColor: newDuckColor.dark }
+	]);
+	} catch(e) {
+		console.error(`Error replacing image color for: ${imgSrc}`, e);
+		return null;
+	}
+}
+async function replaceColors(src, replacements) {
+    function hexToRgb(hex) {
+        hex = hex.replace("#", "");
+        if (hex.length === 3) {
+            hex = hex.split("").map(x => x + x).join("");
+        }
+        return {
+            r: parseInt(hex.substring(0, 2), 16),
+            g: parseInt(hex.substring(2, 4), 16),
+            b: parseInt(hex.substring(4, 6), 16)
+        };
+    }
+    const lookup = new Map();
+    for (const pair of replacements) {
+        const oldRgb = hexToRgb(pair.oldColor);
+        const newRgb = hexToRgb(pair.newColor);
+
+        const key =
+            (oldRgb.r << 16) |
+            (oldRgb.g << 8) |
+             oldRgb.b;
+
+        lookup.set(key, newRgb);
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = src;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const key =
+            (data[i] << 16) |
+            (data[i + 1] << 8) |
+             data[i + 2];
+
+        const replacement = lookup.get(key);
+        if (replacement) {
+            data[i] = replacement.r;
+            data[i + 1] = replacement.g;
+            data[i + 2] = replacement.b;
+        }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.toDataURL("image/png");
 }
 
 const toggleOverlaysButton = document.getElementById("toggle-overlays");
@@ -372,6 +521,8 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 
 	img.onload = () => {
 		const templateIndex = getImageTemplate(img.naturalWidth)
+		imgOverlay.setAttribute(customAttributeTemplateIndex, templateIndex);
+		imgOverlayWing.setAttribute(customAttributeTemplateIndex, templateIndex);
 		if (templateIndex > 0) {
 			imgOverlay.src = `./media/Template-${templateIndex}x.png`
 			imgOverlayWing.src = `./media/Template-${templateIndex}x-wing.png`
