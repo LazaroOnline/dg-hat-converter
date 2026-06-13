@@ -640,3 +640,43 @@ document.addEventListener("keydown", (e) => {
 		toggleDuckOverlayVisibility();
 	}
 });
+
+hatsOutput.addEventListener("auxclick", (e) => {
+	if (e.button !== 1) {
+		return;
+	}
+	const link = e.target.closest("a");
+	if (!link || !hatsOutput.contains(link)) {
+		return;
+	}
+	var imgHat = link.querySelector("img.hat-image");
+	openImgInPhotopea(imgHat);
+	e.stopPropagation();
+	e.preventDefault();
+});
+
+function openImgInPhotopea(imgElement){
+	if (imgElement.src != null) {
+		openImgUrlInPhotopea(imgElement.src);
+	}
+}
+
+// Examples:
+// openImgUrlInPhotopea("https://lazaroonline.github.io/dg-hat-converter/media/Template-2x.png")
+// openImgUrlInPhotopea(["https://lazaroonline.github.io/dg-hat-converter/media/Template-2x.png", "https://lazaroonline.github.io/dg-hat-converter/media/Template-1x.png"])
+function openImgUrlInPhotopea(imgUrl){
+	var url = createPhotopeaUrl(imgUrl);
+	window.open(url, "_blank");
+	console.log("Opening image in Photopea");
+}
+
+function createPhotopeaUrl(fileOrFileArray){
+	// multiple file-urls results in Photopea opening multiple Photopea-tabs (not one tab with multi-layers).
+	var fileList = Array.isArray(fileOrFileArray)? fileOrFileArray : [fileOrFileArray];
+	var config = { files: fileList };
+	var json = JSON.stringify(config);
+	var url = "https://www.photopea.com#" + encodeURIComponent(json);
+	return url;
+}
+
+
