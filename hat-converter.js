@@ -39,7 +39,7 @@ async function loadHatFileList(files) {
 	}
 	const BATCH_SIZE = 100;
 	const promises = await batchProcessArray(files, loadHatFilePngOrHat, BATCH_SIZE);
-	const hatPromises = await Promise.all(promises);
+	const hatPromises = await Promise.allSettled(promises);
 	const hatResults = hatPromises.filter(h => h.status === "fulfilled").map(h => h.value);
 	const filesSkipped = hatResults.filter(h => h.blob == null);
 	const hatListAll = hatResults.filter(h => h.blob != null);
@@ -410,23 +410,24 @@ function getImageTemplate(hatWidth){
 }
 
 const duckColors = {
-	 white: { light: "#FFFFFF", dark: "#9d9d9d",
-		 t1: "./media/Template-1x.png"
-		,t2: "./media/Template-2x.png"
-		,t3: "./media/Template-3x.png"
-		,t4: "./media/Template-4x.png"
-		,w1: "./media/Template-1x-wing.png"
-		,w2: "./media/Template-2x-wing.png"
-		,w3: "./media/Template-3x-wing.png"
-		,w4: "./media/Template-4x-wing.png"
+	 white: { light: "#FFFFFF", dark: "#9d9d9d", images: {
+			t1: "./media/Template-1x.png"
+			,t2: "./media/Template-2x.png"
+			,t3: "./media/Template-3x.png"
+			,t4: "./media/Template-4x.png"
+			,w1: "./media/Template-1x-wing.png"
+			,w2: "./media/Template-2x-wing.png"
+			,w3: "./media/Template-3x-wing.png"
+			,w4: "./media/Template-4x-wing.png"
+		}
 	 }
-	,gray: { light: "#807c73", dark: "#5b5652"}
-	,yellow: {light: "#ffdc58", dark: "#ba993c"}
-	,brown: {light: "#d76816", dark: "#95490d"}
-	,pink: {light: "#ff6975", dark: "#d0545f"}
-	,purple: {light: "#ac56dd", dark: "#8a26be"}
-	,blue: {light: "#2fa2f2", dark: "#0a7cba"}
-	,green: {light: "#00874b", dark: "#006637"}
+	,gray:   { light: "#807c73", dark: "#5b5652", images: { } }
+	,yellow: { light: "#ffdc58", dark: "#ba993c", images: { } }
+	,brown:  { light: "#d76816", dark: "#95490d", images: { } }
+	,pink:   { light: "#ff6975", dark: "#d0545f", images: { } }
+	,purple: { light: "#ac56dd", dark: "#8a26be", images: { } }
+	,blue:   { light: "#2fa2f2", dark: "#0a7cba", images: { } }
+	,green:  { light: "#00874b", dark: "#006637", images: { } }
 }
 let currentColorIndex = 0;
 const toggleOverlayColorsButton = document.getElementById("toggle-overlay-colors");
@@ -444,9 +445,9 @@ function setDuckOverlayColorByIndex(currentColorIndex){
 	setDuckOverlayColorByName(newColorName);
 }
 function setDuckOverlayColorByName(newColorName){
-	var newColors = duckColors[newColorName];
+	var newColor = duckColors[newColorName];
 	console.log(`Changing duck color overlay to ${newColorName}.`);
-	setDuckOverlayColor(newColors);
+	setDuckOverlayColor(newColor);
 }
 function setDuckOverlayColor(newDuckColor){
 	if (newDuckColor == null) {
@@ -458,7 +459,7 @@ function setDuckOverlayColor(newDuckColor){
 		if (templateIndex === "null") {
 			continue;
 		}
-		imgWing.src = newDuckColor["w" + templateIndex];
+		imgWing.src = newDuckColor.images["w" + templateIndex];
 		if (imgWing.src == null) {
 			console.log("NULL overlay image wing detected!");
 		}
@@ -469,34 +470,40 @@ function setDuckOverlayColor(newDuckColor){
 		if (templateIndex === "null") {
 			continue;
 		}
-		imgBody.src = newDuckColor["t" + templateIndex];
+		imgBody.src = newDuckColor.images["t" + templateIndex];
 		if (imgBody.src == null) {
 			console.log("NULL overlay image body detected!");
 		}
 	}
 }
 preloadDuckOverlayColors();
-async function preloadDuckOverlayColors(newDuckColor){
+async function preloadDuckOverlayColors(newDuckColor) {
 	var colorNames = Object.keys(duckColors);
+	var promises = [];
 	for (var colorName of colorNames) {
 		var newDuckColor = duckColors[colorName];
-		await preloadDuckColorsFromWhite(newDuckColor);
+		var promiseLoadImg = preloadDuckColorsFromWhite(newDuckColor);
+		promises.push(promiseLoadImg);
 		console.log(`Preloaded overlay colors ${colorName}`, newDuckColor);
 	}
+	await Promise.allSettled(promises);
 }
 
-async function preloadDuckColorsFromWhite(newDuckColor){
-	if (newDuckColor.t1 != null) {
+async function preloadDuckColorsFromWhite(newDuckColor) {
+	if (newDuckColor.images?.t1 != null) {
 		return; // already loaded.
 	}
-	newDuckColor.t1 = await replaceDuckColorsFromWhite(duckColors.white.t1, newDuckColor);
-	newDuckColor.t2 = await replaceDuckColorsFromWhite(duckColors.white.t2, newDuckColor);
-	newDuckColor.t3 = await replaceDuckColorsFromWhite(duckColors.white.t3, newDuckColor);
-	newDuckColor.t4 = await replaceDuckColorsFromWhite(duckColors.white.t4, newDuckColor);
-	newDuckColor.w1 = await replaceDuckColorsFromWhite(duckColors.white.w1, newDuckColor);
-	newDuckColor.w2 = await replaceDuckColorsFromWhite(duckColors.white.w2, newDuckColor);
-	newDuckColor.w3 = await replaceDuckColorsFromWhite(duckColors.white.w3, newDuckColor);
-	newDuckColor.w4 = await replaceDuckColorsFromWhite(duckColors.white.w4, newDuckColor);
+	var promises = [];
+	var duckImageNames = Object.keys(duckColors.white.images);
+	for (var imgName of duckImageNames) {
+		const imageName = imgName; // This is required to keep the reference unchanged during the "then" function.
+		var promise = replaceDuckColorsFromWhite(duckColors.white.images[imageName], newDuckColor)
+		.then(r => {
+			newDuckColor.images[imageName] = r?.img;
+		});
+		promises.push(promise);
+	}
+	await Promise.allSettled(promises);
 }
 
 const pinkTransparentColor = "#ff00ff";
@@ -530,12 +537,12 @@ async function replaceColors(src, colorReplacementPairList) {
 	ctx.drawImage(img, 0, 0);
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const pixels = imageData.data;
-	let pixelsReplaced = 0;
+	let pixelsReplacedCount = 0;
 	for (let i = 0; i < pixels.length; i += 4) {
 		const currentPixelColor = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
 		const newColor = colorMap.get(currentPixelColor);
 		if (newColor) {
-			pixelsReplaced++;
+			pixelsReplacedCount++;
 			pixels[i] = newColor.r;
 			pixels[i + 1] = newColor.g;
 			pixels[i + 2] = newColor.b;
@@ -546,7 +553,7 @@ async function replaceColors(src, colorReplacementPairList) {
 		}
 	}
 	ctx.putImageData(imageData, 0, 0);
-	return canvas.toDataURL("image/png");
+	return { img: canvas.toDataURL("image/png"), pixelsReplacedCount };
 }
 
 function getColorMap(colorPairList) {
@@ -655,7 +662,25 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 
 	img.src = URL.createObjectURL(blob)
 	// img.src = await replaceHatTransparentPink(img.src);
-	replaceHatTransparentPink(img.src).then(r => img.src = r);
+	replaceHatTransparentPink(img.src).then(r => {
+		if (r == null) {
+			console.error(`Error replacing pink for ${hatFileName}`, img);
+		}
+		img.src = r.img;
+		if (r?.pixelsReplacedCount > 0) {
+			const imageContainer = img.parentElement.parentElement;
+			imageContainer.classList.add("has-transparent-pink");
+
+			// Detect when the transparent pink color is used accidentally in a hat,
+			// considering that when it is used intentionally there are a lot of pixels in pink
+			// raise an alert if less than a threshold of pink pixels is used.
+			const transparentPinkMinimumForAlert = 500;
+			if (r.pixelsReplacedCount < transparentPinkMinimumForAlert) {
+				imageContainer.classList.add("has-transparent-pink-extra-alert");
+			}
+			imageContainer.title += `Found ${r.pixelsReplacedCount} pixels with transparent Pink ${pinkTransparentColor}`;
+		}
+	});
 	img.alt = `Image for ${hatFileName}`
 	// img.title = `Download ${newFileName}.png`
 
