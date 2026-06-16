@@ -38,11 +38,12 @@ async function loadHatFileList(files) {
 		return;
 	}
 	const BATCH_SIZE = 100;
-	const promises = await batchProcessArray(files, loadHatFilePngOrHat, BATCH_SIZE);
-	const hatPromises = await Promise.allSettled(promises);
+	const hatPromises = await batchProcessArray(files, loadHatFilePngOrHat, BATCH_SIZE);
+	// hatPromises.push({ status: 'rejected', reason: new Error('Test image error manually.') });
+	
 	const hatResults = hatPromises.filter(h => h.status === "fulfilled").map(h => h.value);
-	const filesSkipped = hatResults.filter(h => h.blob == null);
-	const hatListAll = hatResults.filter(h => h.blob != null);
+	const filesSkipped = hatResults.filter(h => h.blob == null || h.skipped);
+	const hatListAll = hatResults.filter(h => h.blob != null && !h.skipped);
 	const errors = hatPromises.filter(h => h.status === "rejected").map(h => h.reason);
 	const newHats = hatListAll.filter(h => h?.duplicateOf == null);
 	const hatDupeList = hatListAll.filter(h => h?.duplicateOf != null);
@@ -68,7 +69,7 @@ async function loadHatFileList(files) {
 	await tryCreateZip(hatsConverted);
 }
 
-async function batchProcessArray(list, processFunc, batchSize = 100) {
+async function batchProcessArray(list, processFuncAsync, batchSize = 100) {
 	const array = Array.from(list);
 	console.log(`Started processing ${array.length} elements in total.`);
 	const totalBatches = Math.ceil(array.length / batchSize);
@@ -78,7 +79,7 @@ async function batchProcessArray(list, processFunc, batchSize = 100) {
 		if (list.length > batchSize) {
 			console.log(`Started processing batch ${Math.floor(start / batchSize) + 1} of ${totalBatches}: ${batch.length} elements...`);
 		}
-		const batchPromises = batch.map(element => processFunc(element));
+		const batchPromises = batch.map(element => processFuncAsync(element));
 		const results = await Promise.allSettled(batchPromises);
 		promises.push(...results);
 	}
@@ -86,6 +87,10 @@ async function batchProcessArray(list, processFunc, batchSize = 100) {
 	return promises;
 }
 
+const hatExtensions = {
+	 hat: ".hat"
+	,png: ".png"
+}
 function hasHatFileExtension(fileName) {
 	return hasFileExtension(fileName, ".hat");
 }
@@ -119,11 +124,11 @@ async function loadHatFileFromHat(file) {
 	// "hatFileName" is the original .hat file name.
 	// "newFileName" is the sanitized and made-unique name for the output PNG.
 	const hat = {
-		hatFileName: file.name,
-		name: decryptedHat.name,
-		newFileName: nameSanitizedUnique,
-		isRenamedToBeUnique: isRenamedToBeUnique,
-		blob: decryptedHat.blob
+		 hatFileName: file.name
+		,name: decryptedHat.name
+		,newFileName: nameSanitizedUnique
+		,isRenamedToBeUnique: isRenamedToBeUnique
+		,blob: decryptedHat.blob
 	}
 	const alreadyExistingHat = existHat(hat, hats);
 	if (alreadyExistingHat) {
@@ -131,21 +136,16 @@ async function loadHatFileFromHat(file) {
 		console.warn(`Hat "${hat.name}" with ${hat.blob.size} bytes already exists. Skipping duplicate: ${hat.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
 	}
 	else {
-		hatsConverted.push(hat);
-		if (hatsConverted.length == 1) {
-			setVisibleAfterLoad(true);
-		}
-		createOutputElem(hat.name, hat.hatFileName, hat.newFileName, hat.blob);
-		console.log(`Processed file: ${hat.hatFileName} -> ${hat.newFileName}.png`);
+		await addHatFileInfo(hat);
 	}
 	return hat;
 }
 
 async function loadHatFilePngOrHat(file) {
 	if (hasHatFileExtension(file.name)) {
-		return loadHatFileFromHat(file);
+		return await loadHatFileFromHat(file);
 	} else if (hasPngFileExtension(file.name)){
-		return loadHatFileFromPng(file);
+		return await loadHatFileFromPng(file);
 	} else {
 		return { hatFileName: file.name, message: "Not a .png nor .hat file" };
 	}
@@ -166,18 +166,21 @@ async function loadHatFileFromPng(file) {
 		console.error(errorMessage, e);
 		throw new Error(`${errorMessage}: ${e.message}`, { cause: e });
 	}
-	const nameSanitized = sanitizeFileName(hatInfoPng.name);
-	const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
-	const isRenamedToBeUnique = nameSanitizedUnique !== nameSanitized;
+
+	// For hats that were already PNG this is not needed:
+	// const nameSanitized = sanitizeFileName(hatInfoPng.name);
+	// const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
+	// const isRenamedToBeUnique = nameSanitizedUnique !== nameSanitized;
+
 	// "name" is the metadata inside the hat file.
 	// "hatFileName" is the original .hat file name.
 	// "newFileName" is the sanitized and made-unique name for the output PNG.
 	const hat = {
-		hatFileName: file.name,
-		name: hatInfoPng.name,
-		newFileName: nameSanitizedUnique,
-		isRenamedToBeUnique: isRenamedToBeUnique,
-		blob: hatInfoPng.blob
+		 hatFileName: file.name
+		,name: hatInfoPng.name
+		,newFileName: hatInfoPng.name //nameSanitizedUnique
+		,isRenamedToBeUnique: false // isRenamedToBeUnique
+		,blob: hatInfoPng.blob
 	}
 	const alreadyExistingHat = existHat(hat, hats);
 	if (alreadyExistingHat) {
@@ -185,12 +188,7 @@ async function loadHatFileFromPng(file) {
 		console.warn(`Hat "${hat.name}" with ${hat.blob.size} bytes already exists. Skipping duplicate: ${hat.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
 	}
 	else {
-		hats.push(hat);
-		if (hats.length == 1) {
-			setVisibleAfterLoad(true);
-		}
-		createOutputElem(hat.name, hat.hatFileName, hat.newFileName, hat.blob);
-		console.log(`Processed file: ${hat.hatFileName} -> ${hat.newFileName}.png`);
+		await addHatFileInfo(hat);
 	}
 	return hat;
 }
@@ -280,7 +278,7 @@ async function getEncryptionKey(){
 
 async function getHatInfoFromPng(file){
 	const blob = await getImageBlobFromFile(file);
-	return { name: file.name, blob: blob};
+	return { name: removePngExtension(file.name), blob: blob};
 }
 
 async function getImageBlobFromFile(file){
@@ -356,8 +354,16 @@ function sanitizeFileName(name, replacement = '_') {
 }
 
 function removeHatExtension(name) {
-	return name.replace(/\.hat$/, "")
+	return removeFileExtension(name, "hat")
 }
+function removePngExtension(name) {
+	return removeFileExtension(name, "png")
+}
+function removeFileExtension(name, extWithoutDot) {
+	const regex = new RegExp("\\." + extWithoutDot + "$", "i")
+	return name.replace(regex, "");
+}
+
 
 function existHat(hatInfo, hats) {
 	return hats.find(h => compareHats(h, hatInfo));
@@ -380,31 +386,44 @@ function getNameDescription(name, hatFileName, newFileName) {
 	return nameDesc;
 }
 
+const hatImageWidths = {
+	 x1: 32 // Single hat
+	,x2: 64 // Hat/Quack images
+	,x3: 96 // Hat/Quack/Cape images
+	,full: 97 // Hat/Quack/Cape/MetaPixels images (could be more, but not usual and not too much)
+	,max: 120 // Any image wider than this won't be considered a hat.
+}
+
 const customAttributeTemplateIndex = "template-index"
 function getImageTemplate(hatWidth){
+	const w = hatImageWidths;
 	if (hatWidth < 32) {
-		console.log("Hat width is smaller than 32px, hiding duck template overlay.");
+		console.log(`Hat width is smaller than ${w.x1}px, hiding duck template overlay.`);
 		return 0 // no image or fallback to "./media/Template-1x.png"
 	}
-	if (hatWidth === 32) {
+	if (hatWidth === w.x1) {
 		return 1
 	}
-	else if (hatWidth === 64) {
+	else if (hatWidth === w.x2) {
 		return 2
 	}
-	else if (hatWidth > 64 && hatWidth < 96) {
+	else if (hatWidth > w.x2 && hatWidth < w.x3) {
 		console.log("Hat width has a semi-cape, missing pixels from cape.");
 		return 3
 	}
-	else if (hatWidth === 96) {
+	else if (hatWidth === w.x3) {
 		return 3
 	}
-	else if (hatWidth === 97) {
+	else if (hatWidth === w.full) {
 		return 4
 	}
-	else if (hatWidth > 97) {
-		console.log("Hat width is greater than 97px, using largest template available.");
+	else if (hatWidth <= w.max) {
+		console.log(`Hat width is greater than ${w.full}px, using largest template available.`);
 		return 4
+	}
+	else {
+		// console.log(`Hat width is greater than ${w.max}, won't be considered a hat image, skipping.`);
+		return 0
 	}
 	return null;
 }
@@ -507,6 +526,34 @@ async function preloadDuckColorsFromWhite(newDuckColor) {
 }
 
 const pinkTransparentColor = "#ff00ff";
+async function replaceHatTransparentPinkWithAlerts(img){
+	const r = await replaceHatTransparentPink(img.src);
+	if (r == null) {
+		// console.error(`Error replacing pink for file: "${hatFileName}"`, img);
+		return;
+	}
+	img.src = r.img; // Replacing it even if no pixels were modified, because this changes the img.src
+	// from: "blob:http://localhost:8000/12345678-1234-1234-1234-123456789012"
+	// to: "data:image/png;base64,iV..."
+	// Which is required to open the image in Photopea.com
+	const pixelsReplacedCount = r?.pixelsReplaced.length;
+	if (pixelsReplacedCount > 0) {
+		const imageContainer = img.parentElement.parentElement;
+		imageContainer.classList.add("has-transparent-pink");
+
+		// Detect when the transparent pink color is used accidentally in a hat,
+		// considering that when it is used intentionally there are a lot of pixels in pink
+		// raise an alert if less than a threshold of pink pixels is used.
+		const transparentPinkMinimumForAlert = 500;
+		if (pixelsReplacedCount < transparentPinkMinimumForAlert) {
+			imageContainer.classList.add("has-transparent-pink-extra-alert");
+		}
+		const maxPixelPositionsInTitle = 20;
+		const showEllipsis = r.pixelsReplaced.length > maxPixelPositionsInTitle;
+		const pixelList = r.pixelsReplaced.slice(0, maxPixelPositionsInTitle).join("\r") + (showEllipsis? "\r..." : "");
+		imageContainer.title += `Found ${pixelsReplacedCount} pixels with transparent Pink ${pinkTransparentColor} at: \r${pixelList}`;
+	}
+}
 async function replaceHatTransparentPink(imgSrc){
 	return await tryReplaceColors(imgSrc, [
 		{ oldColor: pinkTransparentColor, newColor: "#00000000" }
@@ -537,23 +584,35 @@ async function replaceColors(src, colorReplacementPairList) {
 	ctx.drawImage(img, 0, 0);
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const pixels = imageData.data;
-	let pixelsReplacedCount = 0;
+	let pixelsReplaced = [];
 	for (let i = 0; i < pixels.length; i += 4) {
 		const currentPixelColor = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
 		const newColor = colorMap.get(currentPixelColor);
-		if (newColor) {
-			pixelsReplacedCount++;
-			pixels[i] = newColor.r;
-			pixels[i + 1] = newColor.g;
-			pixels[i + 2] = newColor.b;
-			const hasTransparencyData = !isNaN(newColor.a);
-			if (hasTransparencyData) {
-				pixels[i + 3] = newColor.a;
-			}
+		if (!newColor) {
+			continue;
+		}
+		const currentPixelTransparency = pixels[i + 3];
+		const isCurrentPixelTransparent = currentPixelTransparency == 0;
+		const newColorHasTransparencyData = !isNaN(newColor.a);
+		const isColorMatchButIsAlreadyTransparent = isCurrentPixelTransparent && !newColorHasTransparencyData;
+		if (isColorMatchButIsAlreadyTransparent) {
+			continue;
+		}
+		
+		const pixelNumber = i/4;
+		const pixelPositionX = pixelNumber % img.width;
+		const pixelPositionY = Math.floor(pixelNumber / img.width);
+		pixelsReplaced.push(`${pixelPositionY}y-${pixelPositionX}x`);
+
+		pixels[i] = newColor.r;
+		pixels[i + 1] = newColor.g;
+		pixels[i + 2] = newColor.b;
+		if (newColorHasTransparencyData) {
+			pixels[i + 3] = newColor.a;
 		}
 	}
 	ctx.putImageData(imageData, 0, 0);
-	return { img: canvas.toDataURL("image/png"), pixelsReplacedCount };
+	return { img: canvas.toDataURL("image/png"), pixelsReplaced };
 }
 
 function getColorMap(colorPairList) {
@@ -580,9 +639,11 @@ function hexToRgb(hex) {
 	};
 }
 
-async function loadImg(src) {
-	const img = new Image();
-	img.crossOrigin = "anonymous";
+async function loadImg(src, image = null, setCors = true) {
+	const img = image ?? new Image();
+	if (setCors) {
+		img.crossOrigin = "anonymous"; // Required for conversions using canvas.
+	}
 	await new Promise((resolve, reject) => {
 		img.onload = resolve;
 		img.onerror = reject;
@@ -647,8 +708,30 @@ function setVisibilityIcon(visible = true) {
 	toggleOverlaysButton.innerText = visible? emoji1 : emoji2;
 }
 setVisibilityIcon();
+
+async function addHatFileInfo(hat){
+	var hatView = await createHatViewElement(hat.name, hat.hatFileName, hat.newFileName, hat.blob);
+	hat.width= hatView.img.naturalWidth;
+	hat.height= hatView.img.naturalHeight;
+	if (hat.width > hatImageWidths.max) {
+		const skipMessage = `Skipping HAT image too large (${hat.width}px wide, larger than max ${hatImageWidths.max})`;
+		// console.error(`${skipMessage}: "${hat.hatFileName}"`, hat);
+		hat.message= skipMessage;
+		hat.skipped= true;
+		return hat;
+	}
+	if (hasHatFileExtension(hat.hatFileName)) {
+		hatsConverted.push(hat);
+	}
+	hats.push(hat);
+	if (hats.length == 1) {
+		setVisibleAfterLoad(true);
+	}
+	console.log(`Processed file: ${hat.hatFileName} -> ${hat.newFileName}.png`);
+}
+
 const hatTemplate = document.getElementById("hat-template");
-function createOutputElem(name, hatFileName, newFileName, blob){
+async function createHatViewElement(name, hatFileName, newFileName, blob){
 	const hatContainer = hatTemplate.content.cloneNode(true);
 	const img = hatContainer.querySelector("img.hat-image");
 	const a = hatContainer.querySelector("a");;
@@ -660,47 +743,52 @@ function createOutputElem(name, hatFileName, newFileName, blob){
 	title.innerText = nameDesc
 	title.title = `Original file name: ${hatFileName}\nHat metadata name: ${name}\nOutput file name: ${newFileName}.png`
 
-	img.src = URL.createObjectURL(blob)
-	// img.src = await replaceHatTransparentPink(img.src);
-	replaceHatTransparentPink(img.src).then(r => {
-		if (r == null) {
-			console.error(`Error replacing pink for ${hatFileName}`, img);
-		}
-		img.src = r.img;
-		if (r?.pixelsReplacedCount > 0) {
-			const imageContainer = img.parentElement.parentElement;
-			imageContainer.classList.add("has-transparent-pink");
-
-			// Detect when the transparent pink color is used accidentally in a hat,
-			// considering that when it is used intentionally there are a lot of pixels in pink
-			// raise an alert if less than a threshold of pink pixels is used.
-			const transparentPinkMinimumForAlert = 500;
-			if (r.pixelsReplacedCount < transparentPinkMinimumForAlert) {
-				imageContainer.classList.add("has-transparent-pink-extra-alert");
-			}
-			imageContainer.title += `Found ${r.pixelsReplacedCount} pixels with transparent Pink ${pinkTransparentColor}`;
-		}
-	});
+	let imgSrc = URL.createObjectURL(blob)
 	img.alt = `Image for ${hatFileName}`
 	// img.title = `Download ${newFileName}.png`
-
-	img.onload = () => {
-		const templateIndex = getImageTemplate(img.naturalWidth)
-		imgOverlay.setAttribute(customAttributeTemplateIndex, templateIndex);
-		imgOverlayWing.setAttribute(customAttributeTemplateIndex, templateIndex);
-		if (templateIndex > 0) {
-			imgOverlay.src = `./media/Template-${templateIndex}x.png`
-			imgOverlayWing.src = `./media/Template-${templateIndex}x-wing.png`
-			if (img.naturalWidth > 97) {
-				imgOverlay.classList.add("hat-image-is-bigger");
-				imgOverlayWing.classList.add("hat-image-is-bigger");
-			}
-		}
-	};
-
+	// img.src = await replaceHatTransparentPink(img.src);
+	const firstChild = hatContainer.firstElementChild; // Required to keep the reference latter.
+	
 	a.href = img.src
 	a.download = `${newFileName}.png`
 	hatsOutput.appendChild(hatContainer)
+
+	await new Promise((resolve, reject) => {
+		img.onerror = () => {
+			firstChild.remove();
+			img.onerror = null;
+			img.onload = null;
+			reject(`Error loading the file could be damaged: "${hatFileName}"`);
+		};
+		img.onload = () => {
+			const templateIndex = getImageTemplate(img.naturalWidth);
+			imgOverlay.setAttribute(customAttributeTemplateIndex, templateIndex);
+			imgOverlayWing.setAttribute(customAttributeTemplateIndex, templateIndex);
+			if (templateIndex > 0) {
+				// Overlay imgs were hidden in the template 
+				// to prevent showing the broken img icon before they load.
+				imgOverlay.style.display = "";
+				imgOverlayWing.style.display = "";
+
+				imgOverlay.src = `./media/Template-${templateIndex}x.png`
+				imgOverlayWing.src = `./media/Template-${templateIndex}x-wing.png`
+				if (img.naturalWidth > 97) {
+					imgOverlay.classList.add("hat-image-is-bigger");
+					imgOverlayWing.classList.add("hat-image-is-bigger");
+				}
+			}
+			else {
+				firstChild.remove();
+			}
+			img.onerror = null;
+			img.onload = null;
+			resolve();
+		};
+		img.src = imgSrc;
+	});
+	const promiseReplaceTransparent = replaceHatTransparentPinkWithAlerts(img);
+	// await promiseReplaceTransparent;
+	return { container: firstChild, img }
 }
 
 async function tryCreateZip(hats){
@@ -790,6 +878,6 @@ const slider = document.getElementById('zoomSlider');
 const hatViewer = document.querySelector('.duck-out');
 
 slider.addEventListener('input', () => {
-    document.documentElement.style.setProperty('--zoom', slider.value + 'px');
+	document.documentElement.style.setProperty('--zoom', slider.value + 'px');
 });
 
