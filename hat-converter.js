@@ -786,4 +786,10 @@ function createPhotopeaUrl(fileOrFileArray){
 	return url;
 }
 
+const slider = document.getElementById('zoomSlider');
+const hatViewer = document.querySelector('.duck-out');
+
+slider.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--zoom', slider.value + 'px');
+});
 

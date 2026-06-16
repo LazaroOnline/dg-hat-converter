@@ -56,8 +56,11 @@ body.dark-mode, .dark-mode .info {
     width: 100%;
     gap: 4px;
 }
+:root {
+    --zoom: 200px;
+}
 .duck-out {
-    width: 200px;
+    width: var(--zoom);;
     padding: 1px;
     border-radius: 3px;
     text-align: center;
@@ -77,8 +80,6 @@ body.dark-mode, .dark-mode .info {
 }
 .duck-out .hat-image-container {
     border: 1px solid #dedede;
-    max-height: 50vh;
-    /* max-height: 96px; */
     position: relative;
 }
 .duck-out img {
@@ -144,9 +145,13 @@ p {
     margin: 5px 0px;
     display: inline-block;
 }
+.zoom-container{
+    padding-right: 20px;
+}
 
 .button-list {
     display: flex;
+    align-items: center;
     grid-auto-flow: column;
     position: absolute;
     top: 8px;
