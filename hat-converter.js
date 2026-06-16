@@ -24,7 +24,7 @@ async function handleFiles(files) {
 	finally {
 		if (hatsConverted.length > 0) {
 			downloadZipButton.hidden = false;
-}
+		}
 		if (hats.length > 0) {
 			setVisibleAfterLoad(true);
 		}
@@ -63,7 +63,7 @@ async function loadHatFileList(files) {
 	}
 	if (newHats.length !== hats.length) {
 		console.log(`Total hats accumulated: ${hats.length}\n`, hats);
-console.log(`Total hats converted to PNG: ${hatsConverted.length}\n`, hatsConverted);
+		console.log(`Total hats converted to PNG: ${hatsConverted.length}\n`, hatsConverted);
 	}
 	await tryCreateZip(hatsConverted);
 }
@@ -87,7 +87,7 @@ async function batchProcessArray(list, processFunc, batchSize = 100) {
 }
 
 function hasHatFileExtension(fileName) {
-return hasFileExtension(fileName, ".hat");
+	return hasFileExtension(fileName, ".hat");
 }
 function hasPngFileExtension(fileName) {
 	return hasFileExtension(fileName, ".png");
@@ -125,7 +125,7 @@ async function loadHatFileFromHat(file) {
 		isRenamedToBeUnique: isRenamedToBeUnique,
 		blob: decryptedHat.blob
 	}
-const alreadyExistingHat = existHat(hat, hats);
+	const alreadyExistingHat = existHat(hat, hats);
 	if (alreadyExistingHat) {
 		hat.duplicateOf = alreadyExistingHat;
 		console.warn(`Hat "${hat.name}" with ${hat.blob.size} bytes already exists. Skipping duplicate: ${hat.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
@@ -499,9 +499,10 @@ async function preloadDuckColorsFromWhite(newDuckColor){
 	newDuckColor.w4 = await replaceDuckColorsFromWhite(duckColors.white.w4, newDuckColor);
 }
 
+const pinkTransparentColor = "#ff00ff";
 async function replaceHatTransparentPink(imgSrc){
 	return await tryReplaceColors(imgSrc, [
-		{ oldColor: "#ff00ff", newColor: "#ff00ff00" }
+		{ oldColor: pinkTransparentColor, newColor: "#00000000" }
 	]);
 }
 async function replaceDuckColorsFromWhite(imgSrc, newDuckColor){
@@ -518,6 +519,47 @@ async function tryReplaceColors(imgSrc, replacements){
 		return null;
 	}
 }
+async function replaceColors(src, colorReplacementPairList) {
+	const colorMap = getColorMap(colorReplacementPairList);
+	const img = await loadImg(src);
+	const canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(img, 0, 0);
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const pixels = imageData.data;
+	let pixelsReplaced = 0;
+	for (let i = 0; i < pixels.length; i += 4) {
+		const currentPixelColor = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
+		const newColor = colorMap.get(currentPixelColor);
+		if (newColor) {
+			pixelsReplaced++;
+			pixels[i] = newColor.r;
+			pixels[i + 1] = newColor.g;
+			pixels[i + 2] = newColor.b;
+			const hasTransparencyData = !isNaN(newColor.a);
+			if (hasTransparencyData) {
+				pixels[i + 3] = newColor.a;
+			}
+		}
+	}
+	ctx.putImageData(imageData, 0, 0);
+	return canvas.toDataURL("image/png");
+}
+
+function getColorMap(colorPairList) {
+	const lookup = new Map();
+	for (const pair of colorPairList) {
+		const oldRgb = hexToRgb(pair.oldColor);
+		const newRgb = hexToRgb(pair.newColor);
+		const key = (oldRgb.r << 16) | (oldRgb.g << 8) | oldRgb.b;
+		lookup.set(key, newRgb);
+	}
+	return lookup;
+}
+
 function hexToRgb(hex) {
 	hex = hex.replace("#", "");
 	if (hex.length === 3) {
@@ -530,19 +572,8 @@ function hexToRgb(hex) {
 		,a: parseInt(hex.substring(6, 8), 16)
 	};
 }
-async function replaceColors(src, replacements) {
-	const lookup = new Map();
-	for (const pair of replacements) {
-		const oldRgb = hexToRgb(pair.oldColor);
-		const newRgb = hexToRgb(pair.newColor);
 
-		const key =
-			(oldRgb.r << 16) |
-			(oldRgb.g << 8) |
-				oldRgb.b;
-
-		lookup.set(key, newRgb);
-	}
+async function loadImg(src) {
 	const img = new Image();
 	img.crossOrigin = "anonymous";
 	await new Promise((resolve, reject) => {
@@ -550,34 +581,7 @@ async function replaceColors(src, replacements) {
 		img.onerror = reject;
 		img.src = src;
 	});
-
-	const canvas = document.createElement("canvas");
-	canvas.width = img.width;
-	canvas.height = img.height;
-
-	const ctx = canvas.getContext("2d");
-	ctx.drawImage(img, 0, 0);
-	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	const data = imageData.data;
-	for (let i = 0; i < data.length; i += 4) {
-		const key =
-			(data[i] << 16) |
-			(data[i + 1] << 8) |
-				data[i + 2];
-
-		const replacement = lookup.get(key);
-		if (replacement) {
-			data[i] = replacement.r;
-			data[i + 1] = replacement.g;
-			data[i + 2] = replacement.b;
-			const hasTransparencyData = !isNaN(replacement.a);
-			if (hasTransparencyData) {
-			data[i + 3] = replacement.a;
-			}
-		}
-	}
-	ctx.putImageData(imageData, 0, 0);
-	return canvas.toDataURL("image/png");
+	return img;
 }
 
 loadColorOptionDropdown();
