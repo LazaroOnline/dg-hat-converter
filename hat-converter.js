@@ -22,8 +22,10 @@ async function handleFiles(files) {
 		alert("An error occurred while processing the files. Please check the console for details.");
 	}
 	finally {
-		if (hats.length > 0) {
+		if (hatsConverted.length > 0) {
 			downloadZipButton.hidden = false;
+}
+		if (hats.length > 0) {
 			setVisibleAfterLoad(true);
 		}
 		inputElement.value = ''; // Clear the file input for better UX, allowing the same files to be selected again if needed.
@@ -36,7 +38,7 @@ async function loadHatFileList(files) {
 		return;
 	}
 	const BATCH_SIZE = 100;
-	const promises = await batchProcessArray(files, loadHatFile, BATCH_SIZE);
+	const promises = await batchProcessArray(files, loadHatFilePngOrHat, BATCH_SIZE);
 	const hatPromises = await Promise.all(promises);
 	const hatResults = hatPromises.filter(h => h.status === "fulfilled").map(h => h.value);
 	const filesSkipped = hatResults.filter(h => h.blob == null);
@@ -61,8 +63,9 @@ async function loadHatFileList(files) {
 	}
 	if (newHats.length !== hats.length) {
 		console.log(`Total hats accumulated: ${hats.length}\n`, hats);
+console.log(`Total hats converted to PNG: ${hatsConverted.length}\n`, hatsConverted);
 	}
-	await tryCreateZip(hats);
+	await tryCreateZip(hatsConverted);
 }
 
 async function batchProcessArray(list, processFunc, batchSize = 100) {
@@ -84,10 +87,16 @@ async function batchProcessArray(list, processFunc, batchSize = 100) {
 }
 
 function hasHatFileExtension(fileName) {
-	return fileName.toLowerCase().endsWith(".hat");
+return hasFileExtension(fileName, ".hat");
+}
+function hasPngFileExtension(fileName) {
+	return hasFileExtension(fileName, ".png");
+}
+function hasFileExtension(fileName, extension) {
+	return fileName.toLowerCase().endsWith(extension);
 }
 
-async function loadHatFile(file) {
+async function loadHatFileFromHat(file) {
 	const fileBytesBuffer = await file.arrayBuffer();
 	let decryptedHat = null;
 	try {
@@ -104,7 +113,7 @@ async function loadHatFile(file) {
 		throw new Error(`${errorMessage}: ${e.message}`, { cause: e });
 	}
 	const nameSanitized = sanitizeFileName(decryptedHat.name);
-	const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
+	const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hatsConverted.map(h => h.newFileName));
 	const isRenamedToBeUnique = nameSanitizedUnique !== nameSanitized;
 	// "name" is the metadata inside the hat file.
 	// "hatFileName" is the original .hat file name.
@@ -115,6 +124,60 @@ async function loadHatFile(file) {
 		newFileName: nameSanitizedUnique,
 		isRenamedToBeUnique: isRenamedToBeUnique,
 		blob: decryptedHat.blob
+	}
+const alreadyExistingHat = existHat(hat, hats);
+	if (alreadyExistingHat) {
+		hat.duplicateOf = alreadyExistingHat;
+		console.warn(`Hat "${hat.name}" with ${hat.blob.size} bytes already exists. Skipping duplicate: ${hat.hatFileName} (already added from: "${alreadyExistingHat.hatFileName}")`);
+	}
+	else {
+		hatsConverted.push(hat);
+		if (hatsConverted.length == 1) {
+			setVisibleAfterLoad(true);
+		}
+		createOutputElem(hat.name, hat.hatFileName, hat.newFileName, hat.blob);
+		console.log(`Processed file: ${hat.hatFileName} -> ${hat.newFileName}.png`);
+	}
+	return hat;
+}
+
+async function loadHatFilePngOrHat(file) {
+	if (hasHatFileExtension(file.name)) {
+		return loadHatFileFromHat(file);
+	} else if (hasPngFileExtension(file.name)){
+		return loadHatFileFromPng(file);
+	} else {
+		return { hatFileName: file.name, message: "Not a .png nor .hat file" };
+	}
+}
+
+async function loadHatFileFromPng(file) {
+	let hatInfoPng = null;
+	try {
+		hatInfoPng = await getHatInfoFromPng(file);
+	}
+	catch (e) {
+		const hasPngExtension = hasPngFileExtension(file.name);
+		if (!hasPngExtension) {
+			console.warn(`File "${file.name}" is not a 'png' file and does not have the '.png' extension. Skipping...`);
+			return { hatFileName: file.name, message: "Not a .png file" };
+		}
+		const errorMessage = `Error processing file ${file.name} - it may not be a valid .png file or may be corrupted.`;
+		console.error(errorMessage, e);
+		throw new Error(`${errorMessage}: ${e.message}`, { cause: e });
+	}
+	const nameSanitized = sanitizeFileName(hatInfoPng.name);
+	const nameSanitizedUnique = makeUniqueFileName(nameSanitized, hats.map(h => h.newFileName));
+	const isRenamedToBeUnique = nameSanitizedUnique !== nameSanitized;
+	// "name" is the metadata inside the hat file.
+	// "hatFileName" is the original .hat file name.
+	// "newFileName" is the sanitized and made-unique name for the output PNG.
+	const hat = {
+		hatFileName: file.name,
+		name: hatInfoPng.name,
+		newFileName: nameSanitizedUnique,
+		isRenamedToBeUnique: isRenamedToBeUnique,
+		blob: hatInfoPng.blob
 	}
 	const alreadyExistingHat = existHat(hat, hats);
 	if (alreadyExistingHat) {
@@ -193,6 +256,7 @@ Hat decoder
 
 */
 const hats = []
+const hatsConverted = []
 let unnamedCounter = 0
 
 // https://github.com/penguinscode/Quackhead/blob/2681ee7b71a57ab235742a24399babfe323b3ac5/quackhead.js#L14
@@ -212,6 +276,20 @@ async function getEncryptionKey(){
 		["decrypt"]
 	);
 	return encryptionKey;
+}
+
+async function getHatInfoFromPng(file){
+	const blob = await getImageBlobFromFile(file);
+	return { name: file.name, blob: blob};
+}
+
+async function getImageBlobFromFile(file){
+	const fileBytesBuffer = await file.arrayBuffer();
+	return getImageBlobFromFileBuffer(fileBytesBuffer);
+}
+
+function getImageBlobFromFileBuffer(fileBytesBuffer){
+	return new Blob([fileBytesBuffer], { type: "image/png"});
 }
 
 async function decryptHat(hatFileArrayBuffer){
