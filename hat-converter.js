@@ -278,7 +278,7 @@ async function getEncryptionKey(){
 
 async function getHatInfoFromPng(file){
 	const blob = await getImageBlobFromFile(file);
-	return { name: removePngExtension(file.name), blob: blob};
+	return { name: removeFileExtensionPng(file.name), blob: blob};
 }
 
 async function getImageBlobFromFile(file){
@@ -353,17 +353,24 @@ function sanitizeFileName(name, replacement = '_') {
 	return sanitized;
 }
 
-function removeHatExtension(name) {
+function removeFileExtensionHatOrPng(fileName) {
+	let fileNameNoExtension = removeFileExtensionHat(fileName)
+	fileNameNoExtension = removeFileExtensionPng(fileNameNoExtension)
+	return fileNameNoExtension;
+}
+function removeFileExtensionHat(name) {
 	return removeFileExtension(name, "hat")
 }
-function removePngExtension(name) {
+function removeFileExtensionPng(name) {
 	return removeFileExtension(name, "png")
 }
 function removeFileExtension(name, extWithoutDot) {
 	const regex = new RegExp("\\." + extWithoutDot + "$", "i")
 	return name.replace(regex, "");
 }
-
+function removeFileExtension(fileName) {
+	return fileName.replace(/\.[^\.]*$/i, "");
+}
 
 function existHat(hatInfo, hats) {
 	return hats.find(h => compareHats(h, hatInfo));
@@ -376,7 +383,8 @@ function compareHats(hatInfo1, hatInfo2) {
 
 function getNameDescription(name, hatFileName, newFileName) {
 	let nameDesc = name;
-	const hatFileNameNoExtension = removeHatExtension(hatFileName);
+	// const hatFileNameNoExtension = removeFileExtension(hatFileName);
+	const hatFileNameNoExtension = removeFileExtensionHatOrPng(hatFileName);
 	if (name?.toLowerCase() !== hatFileNameNoExtension?.toLowerCase()) {
 		nameDesc += ` (${hatFileName})`
 	}
