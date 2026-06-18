@@ -757,7 +757,7 @@ async function createHatViewElement(name, hatFileName, newFileName, blob){
 	// img.src = await replaceHatTransparentPink(img.src);
 	const firstChild = hatContainer.firstElementChild; // Required to keep the reference latter.
 	
-	a.href = img.src
+	
 	a.download = `${newFileName}.png`
 	hatsOutput.appendChild(hatContainer)
 
@@ -793,9 +793,11 @@ async function createHatViewElement(name, hatFileName, newFileName, blob){
 			resolve();
 		};
 		img.src = imgSrc;
+		a.href = img.src
 	});
 	const promiseReplaceTransparent = replaceHatTransparentPinkWithAlerts(img);
 	// await promiseReplaceTransparent;
+	promiseReplaceTransparent.then(r => a.href = img.src); // With this, the downloaded hat will have the transparent pink edited out as pure transparent.
 	return { container: firstChild, img }
 }
 
