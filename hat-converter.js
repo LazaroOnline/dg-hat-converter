@@ -113,7 +113,7 @@ async function loadHatFileFromHat(file) {
 			console.warn(`File "${file.name}" is not a 'hat' file and does not have the '.hat' extension. Skipping...`);
 			return { hatFileName: file.name, message: "Not a .hat file" };
 		}
-		const errorMessage = `Error processing file ${file.name} - it may not be a valid .hat file or may be corrupted.`;
+		const errorMessage = `Error processing file "${file.name}" - it may not be a valid .hat file or may be corrupted.`;
 		console.error(errorMessage, e);
 		throw new Error(`${errorMessage}: ${e.message}`, { cause: e });
 	}
@@ -162,7 +162,7 @@ async function loadHatFileFromPng(file) {
 			console.warn(`File "${file.name}" is not a 'png' file and does not have the '.png' extension. Skipping...`);
 			return { hatFileName: file.name, message: "Not a .png file" };
 		}
-		const errorMessage = `Error processing file ${file.name} - it may not be a valid .png file or may be corrupted.`;
+		const errorMessage = `Error processing file "${file.name}" - it may not be a valid .png file or may be corrupted.`;
 		console.error(errorMessage, e);
 		throw new Error(`${errorMessage}: ${e.message}`, { cause: e });
 	}
