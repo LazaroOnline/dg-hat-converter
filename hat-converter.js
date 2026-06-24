@@ -405,28 +405,23 @@ const hatImageWidths = {
 const customAttributeTemplateIndex = "template-index"
 function getImageTemplate(hatWidth){
 	const w = hatImageWidths;
-	if (hatWidth < 32) {
+	if (hatWidth < w.x1) {
 		console.log(`Hat width is smaller than ${w.x1}px, hiding duck template overlay.`);
 		return 0 // no image or fallback to "./media/Template-1x.png"
 	}
-	if (hatWidth === w.x1) {
+	if (hatWidth >= w.x1 && hatWidth < w.x2) {
 		return 1
 	}
-	else if (hatWidth === w.x2) {
+	else if (hatWidth >= w.x2 && hatWidth < w.x3) {
 		return 2
 	}
-	else if (hatWidth > w.x2 && hatWidth < w.x3) {
-		console.log("Hat width has a semi-cape, missing pixels from cape.");
+	else if (hatWidth >= w.x3 && hatWidth < w.full) {
 		return 3
 	}
-	else if (hatWidth === w.x3) {
-		return 3
-	}
-	else if (hatWidth === w.full) {
-		return 4
-	}
-	else if (hatWidth <= w.max) {
-		console.log(`Hat width is greater than ${w.full}px, using largest template available.`);
+	else if (hatWidth >= w.full && hatWidth < w.max) {
+		if (hatWidth > w.full) {
+			console.log(`Hat width is greater than ${w.full}px, using largest template available.`);
+		}
 		return 4
 	}
 	else {
