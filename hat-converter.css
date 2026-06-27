@@ -1,3 +1,52 @@
+/*
+To test how the emojis would look with Linux
+change the font to use "Noto Color Emoji"
+https://fonts.google.com/noto/specimen/Noto+Color+Emoji
+
+MacOS uses "Apple Color Emoji" but it is not available as a webfont 
+due to both licensing and apple's emoji format not being supported.
+Some fan projects may exist but won't work for the web or would use images instead of fonts:
+https://github.com/samuelngs/apple-emoji-ttf
+https://www.onlinewebfonts.com/download/5ab304ade0d4f62d027d12464ca69443
+
+Used emojis compared between emoji fonts:
+https://emojipedia.org/artist-palette#designs
+https://emojipedia.org/nerd-face#designs
+https://emojipedia.org/face-with-peeking-eye#designs
+https://emojipedia.org/sun-with-face#designs
+https://emojipedia.org/first-quarter-moon-face#designs
+
+
+Windows: "Segoe UI Emoji"
+Linux:   "Noto Color Emoji"
+MacOS:   "Apple Color Emoji"
+
+
+@import url("https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap");
+.btn { font-family: "SegoeEmoji" !important; }
+*/
+
+/* Use Microsoft's fluent emojis from "Segoe UI Emoji" font 
+downloaded as a webfont to share across all systems.
+Converted from Windows11 TTF font "seguiemj.ttf" using:
+https://cloudconvert.com/ttf-to-woff2
+*/
+@font-face {
+    font-family: "SegoeEmoji";
+    src: url("fonts/seguiemj.woff2") format("woff2");
+    /*
+    src: url("fonts/seguiemj.woff") format("woff");
+    src: url("fonts/seguiemj.woff2") format("woff2");
+    src: url("fonts/seguiemj.ttf") format("truetype");
+    */
+    /* Adjust for vertically unaligned external-fonts issue in Chrome: */
+    ascent-override: 95%;
+    descent-override: 20%;
+    line-gap-override: 0%;
+}
+.btn-circle { font-family: "SegoeEmoji"; }
+
+
 body, html{
     width: 100%;
     height: 100%;
@@ -192,19 +241,24 @@ button {
     border-radius: 50%;
     height: 37px;
     width: 37px;
+    min-width: 37px;
+    display: grid;
+    place-items: center;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
 }
 .btn-circle div {
     filter: drop-shadow(0px 0px 1px #00000055);
 }
-.btn-dark {
-    position: relative;
+.btn-dark div {
+    grid-area: 1 / 1;
 }
 .btn-dark .moon {
-    top: 3px;
-    position: absolute;
     filter: drop-shadow(0px 1px 2px #00000099);
-    left: 5px;
     font-size: 23px;
+    width: 28px;
+    grid-area: 1 / 1;
 }
 .btn-clear-container {
     position: sticky;
@@ -218,6 +272,7 @@ button {
     border-radius: 50%;
     height: 16px;
     width: 16px;
+    min-width: 16px;
     font-size: 15px;
     filter: grayscale(1);
     background: white;

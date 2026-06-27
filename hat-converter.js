@@ -8,7 +8,10 @@ const hatsOutput = document.getElementById("hats-output")
 setVisibleAfterLoad(false);
 function setVisibleAfterLoad(visible) {
 	const visibleAfterLoad = document.querySelectorAll(".visibleAfterLoad")
-	visibleAfterLoad.forEach(el => el.hidden = !visible);
+	visibleAfterLoad.forEach(el => {
+		el.hidden = !visible;
+		el.style.display = visible? "" : "none";
+	});
 }
 
 // handle file "uploads"
